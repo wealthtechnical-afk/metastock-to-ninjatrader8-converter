@@ -21,6 +21,6 @@ Free **NinjaTrader® 8 indicator** that converts **MetaStock®-compatible end-of
 Works with MetaStock-compatible data from any data vendor or market – and from our free [NSE/BSE EOD Downloader](https://www.wealthtechnical.com/eod-downloader/). Converted data can also be used in Python, Excel, AI tools or a platform of your choice.
 
 ## Important
-Free tool, provided as is – compare converted data with your original files. Not investment advice. WealthTechnical LLP is an Ecosystem Vendor of NinjaTrader Group LLC. The NinjaTrader link on this page is our referral link – we may earn a commission if you sign up through it, at no cost to you. MetaStock® and NinjaTrader® are trademarks of their respective owners.
+Free tool, provided as is – compare converted data with your original files. Not investment advice. WealthTechnical LLP is an Ecosystem Vendor of NinjaTrader Group LLC. The NinjaTrader link on this page is our referral link. MetaStock® and NinjaTrader® are trademarks of their respective owners.
 
 © WealthTechnical LLP · [wealthtechnical.com](https://www.wealthtechnical.com)

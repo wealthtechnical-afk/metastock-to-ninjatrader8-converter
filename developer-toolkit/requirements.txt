@@ -1,0 +1,5 @@
+pandas>=1.5
+# optional
+pyarrow      # Parquet export
+matplotlib   # charts in the notebook
+jupyter      # run examples/quick_start.ipynb

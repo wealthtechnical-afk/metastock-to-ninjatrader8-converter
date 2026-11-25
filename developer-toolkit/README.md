@@ -22,9 +22,9 @@ Free, open-source (MIT) helpers for the plain-text files written by the free **[
 ## Install
 
 ```bash
-pip install "https://github.com/wealthtechnical-afk/metastock-to-ninjatrader8-converter/archive/refs/heads/main.zip#subdirectory=developer-toolkit"
+pip install wt-nt8-eod
 ```
-This adds the `wt-nt8-eod` command and the `wt_nt8_eod` Python module. (Or just download the folder and use the files directly, as below.)
+From [PyPI](https://pypi.org/project/wt-nt8-eod/). This adds the `wt-nt8-eod` command and the `wt_nt8_eod` Python module. (Or just download the folder and use the files directly, as below. Latest unreleased version: `pip install "https://github.com/wealthtechnical-afk/metastock-to-ninjatrader8-converter/archive/refs/heads/main.zip#subdirectory=developer-toolkit"`)
 
 ## Quick start
 

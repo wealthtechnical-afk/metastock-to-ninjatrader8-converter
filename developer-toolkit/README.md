@@ -21,6 +21,8 @@ Free, open-source (MIT) helpers for the plain-text files written by the free **[
 
 ## Install
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wealthtechnical-afk/metastock-to-ninjatrader8-converter/blob/main/developer-toolkit/quickstart_colab.ipynb) – try it in your browser on the made-up sample data, nothing to install
+
 ```bash
 pip install wt-nt8-eod
 ```

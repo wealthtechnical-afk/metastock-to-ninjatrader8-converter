@@ -1,6 +1,8 @@
 """
 wt_nt8_eod – free helper for NinjaTrader 8 end-of-day (EOD) text files.
 
+Also reads and writes the WealthTechnical Data Tool format (Ticker,Date,Open,High,Low,Close,Volume).
+
 Works with the plain-text files written by the free WealthMetaStockToNT8 Converter
 (https://www.wealthtechnical.com/wealthmetastock-to-nt8-converter.html) and with any
 other file in NinjaTrader 8's end-of-day format:
@@ -25,7 +27,7 @@ or from the command line:
     python wt_nt8_eod.py info   "C:/NT8 data"
     python wt_nt8_eod.py check  "C:/NT8 data"
     python wt_nt8_eod.py export "C:/NT8 data" all_data.csv      (or .parquet, or .db for SQLite)
-    python wt_nt8_eod.py export "C:/NT8 data" C:/out --format amibroker   (nt8, amibroker, metastock-csv, mt5, csv-per-symbol)
+    python wt_nt8_eod.py export "C:/NT8 data" C:/out --format amibroker   (nt8, amibroker, metastock-csv, mt5, csv-per-symbol, wealthtool)
 
 For education and analysis only – not investment advice. Provided "as is" under the MIT
 licence (see LICENSE). This toolkit does not provide market data. Always compare
@@ -42,7 +44,7 @@ from typing import Iterable
 
 import pandas as pd
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 COLUMNS = ["date", "open", "high", "low", "close", "volume"]
 DEFAULT_EXTENSIONS = (".txt", ".csv")
@@ -78,6 +80,11 @@ def read_file(path: str | os.PathLike, symbol: str | None = None) -> pd.DataFram
     if not lines:
         return _empty()
     sep = _detect_sep(lines[0])
+    if lines[0].lower().replace(" ", "").startswith("ticker" + sep + "date"):
+        df = read_wealthtool(path, delimiter=sep)          # WealthTechnical Data Tool file
+        if symbol:
+            df["symbol"] = symbol
+        return df
     has_header = not re.match(r"^\d{8}", lines[0])
     rows = lines[1:] if has_header else lines
     recs = [r.split(sep) for r in rows]
@@ -325,8 +332,48 @@ def to_sqlite(df: pd.DataFrame, path: str | os.PathLike, table: str = "bars") ->
     return path
 
 
+# ----------------------------------------------------------------------------- WealthTechnical Data Tool format
+WEALTHTOOL_COLUMNS = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume"]
+
+
+def write_wealthtool(df: pd.DataFrame, folder: str | os.PathLike, delimiter: str = ",",
+                     date_format: str = "%Y%m%d", header: bool = True,
+                     columns: list | None = None, extension: str = ".txt") -> list[Path]:
+    """WealthTechnical Data Tool files – the same layout as the Downloader's "WealthTool" export:
+    SYMBOL.txt with Ticker,Date(yyyymmdd),Open,High,Low,Close,Volume (prices to 4 decimals).
+    delimiter, date_format, header, columns and extension follow the Downloader's WealthTool settings."""
+    cols = columns or WEALTHTOOL_COLUMNS
+    folder = Path(folder); folder.mkdir(parents=True, exist_ok=True); out = []
+    for sym, g in df.dropna(subset=["date"]).sort_values("date").groupby("symbol"):
+        p = folder / f"{sym}{extension}"
+        with open(p, "w", encoding="utf-8", newline="\n") as f:
+            if header:
+                f.write(delimiter.join(cols) + "\n")
+            for r in g.itertuples(index=False):
+                vals = {"Ticker": str(sym), "Date": r.date.strftime(date_format), "Open": f"{r.open:.4f}",
+                        "High": f"{r.high:.4f}", "Low": f"{r.low:.4f}", "Close": f"{r.close:.4f}",
+                        "Volume": str(0 if pd.isna(r.volume) else int(r.volume))}
+                f.write(delimiter.join(vals[c] for c in cols if c in vals) + "\n")
+        out.append(p)
+    return out
+
+
+def read_wealthtool(path: str | os.PathLike, delimiter: str = ",", date_format: str = "%Y%m%d") -> pd.DataFrame:
+    """Read one WealthTechnical Data Tool file (with a header line, as the Downloader writes by default)."""
+    d = pd.read_csv(path, sep=delimiter, dtype={"Date": str})
+    d.columns = [c.strip().lower() for c in d.columns]
+    d["date"] = pd.to_datetime(d["date"].astype(str).str.strip(), format=date_format, errors="coerce")
+    sym = d.pop("ticker") if "ticker" in d.columns else Path(path).stem
+    d.insert(0, "symbol", sym if isinstance(sym, str) else sym.astype(str))
+    for c in ["open", "high", "low", "close", "volume"]:
+        if c not in d.columns:
+            d[c] = pd.NA
+        d[c] = pd.to_numeric(d[c], errors="coerce")
+    return d[["symbol", "date", "open", "high", "low", "close", "volume"]]
+
+
 WRITERS = {"nt8": lambda df, folder: write_nt8(df, folder), "amibroker": write_amibroker, "metastock-csv": write_metastock_csv,
-           "mt5": write_mt5, "csv-per-symbol": write_csv_per_symbol}
+           "mt5": write_mt5, "csv-per-symbol": write_csv_per_symbol, "wealthtool": write_wealthtool}
 
 
 def _n(x) -> str:

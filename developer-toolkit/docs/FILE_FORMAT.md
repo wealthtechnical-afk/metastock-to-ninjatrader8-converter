@@ -52,3 +52,14 @@ yyyyMMdd;open;high;low;close;volume
 * Compare a few converted symbols with your original charts before relying on the data.
 * A one-day move of 40 % or more is often a split or bonus that was not adjusted in the source data – `check_quality()` flags these.
 * `write_nt8()` writes this same format, so you can build weekly bars, synthetic series or cleaned data in Python and import it back into NinjaTrader 8.
+
+## WealthTechnical Data Tool format
+
+The toolkit also reads and writes the WealthTechnical Data Tool format (the "WealthTool" export of the free NSE/BSE EOD Downloader): one `SYMBOL.txt` per instrument –
+
+```
+Ticker,Date,Open,High,Low,Close,Volume
+ALPHA,20220103,120.8600,121.5400,120.5100,120.6300,113201
+```
+
+`read_folder()` recognises these files automatically; `write_wealthtool()` or `export … --format wealthtool` writes them (separator, date format, header and columns can be changed to match your Data Tool settings).

@@ -10,7 +10,7 @@ Free, open-source (MIT) helpers for the plain-text files written by the free **[
 
 | Path | What it does |
 |---|---|
-| `python/wt_nt8_eod.py` | one-file library + command line: read the converter output into pandas, read its symbol lists and mapping, data-quality checks, export to CSV / Parquet / SQLite, and one file per symbol for **NinjaTrader 8, AmiBroker, MetaStock ASCII, MetaTrader 5** or plain CSV |
+| `python/wt_nt8_eod.py` | one-file library + command line: read the converter output into pandas, read its symbol lists and mapping, data-quality checks, export to CSV / Parquet / SQLite, and one file per symbol for **NinjaTrader 8, AmiBroker, MetaStock ASCII, MetaTrader 5, WealthTechnical Data Tool** or plain CSV – and reads WealthTechnical Data Tool files too |
 | `examples/quick_start.ipynb` | Jupyter notebook: load, check, chart, moving averages, export |
 | `examples/01…05_*.py` | explore · 52-week-high screener · export · quality check · weekly bars back to NT8 |
 | `docs/FILE_FORMAT.md` | exactly what the converter writes |
@@ -34,7 +34,7 @@ cd developer-toolkit
 python python/wt_nt8_eod.py info   sample_data          # symbols, first/last date, bars
 python python/wt_nt8_eod.py check  sample_data          # data-quality report
 python python/wt_nt8_eod.py export sample_data all.csv  # one combined file (.parquet, .db = SQLite)
-python python/wt_nt8_eod.py export sample_data out_ab --format amibroker   # nt8, amibroker, metastock-csv, mt5, csv-per-symbol
+python python/wt_nt8_eod.py export sample_data out_ab --format amibroker   # nt8, amibroker, metastock-csv, mt5, csv-per-symbol, wealthtool
 ```
 
 Use your own data by pointing at the converter's output folder (its `NT-All` folder is used), e.g. `python python/wt_nt8_eod.py check "C:\NT8 out"`.

@@ -10,13 +10,21 @@ Free, open-source (MIT) helpers for the plain-text files written by the free **[
 
 | Path | What it does |
 |---|---|
-| `python/wt_nt8_eod.py` | one-file library + command line: read the converter output into pandas, read its symbol lists and mapping, data-quality checks, CSV/Parquet export, write NT8 files back |
+| `python/wt_nt8_eod.py` | one-file library + command line: read the converter output into pandas, read its symbol lists and mapping, data-quality checks, export to CSV / Parquet / SQLite, and one file per symbol for **NinjaTrader 8, AmiBroker, MetaStock ASCII, MetaTrader 5** or plain CSV |
 | `examples/quick_start.ipynb` | Jupyter notebook: load, check, chart, moving averages, export |
 | `examples/01…05_*.py` | explore · 52-week-high screener · export · quality check · weekly bars back to NT8 |
 | `docs/FILE_FORMAT.md` | exactly what the converter writes |
 | `docs/EXCEL.md` | open the files in Excel (CSV or Power Query, no Python needed) |
+| `docs/BACKTESTING.md` | use the data in Python backtesting tools (backtrader example) |
 | `docs/AI_TOOLS.md` | using the files with AI assistants, with example questions |
 | `sample_data/` | a **made-up** converter output (7 fictional symbols, same folders and lists as the real thing – not real market data) so everything runs out of the box |
+
+## Install
+
+```bash
+pip install "https://github.com/wealthtechnical-afk/metastock-to-ninjatrader8-converter/archive/refs/heads/main.zip#subdirectory=developer-toolkit"
+```
+This adds the `wt-nt8-eod` command and the `wt_nt8_eod` Python module. (Or just download the folder and use the files directly, as below.)
 
 ## Quick start
 
@@ -25,7 +33,8 @@ pip install pandas            # optional: pyarrow matplotlib jupyter
 cd developer-toolkit
 python python/wt_nt8_eod.py info   sample_data          # symbols, first/last date, bars
 python python/wt_nt8_eod.py check  sample_data          # data-quality report
-python python/wt_nt8_eod.py export sample_data all.csv  # one combined file
+python python/wt_nt8_eod.py export sample_data all.csv  # one combined file (.parquet, .db = SQLite)
+python python/wt_nt8_eod.py export sample_data out_ab --format amibroker   # nt8, amibroker, metastock-csv, mt5, csv-per-symbol
 ```
 
 Use your own data by pointing at the converter's output folder (its `NT-All` folder is used), e.g. `python python/wt_nt8_eod.py check "C:\NT8 out"`.

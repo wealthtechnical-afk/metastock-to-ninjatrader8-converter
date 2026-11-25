@@ -24,7 +24,8 @@ Use it as a library:
 or from the command line:
     python wt_nt8_eod.py info   "C:/NT8 data"
     python wt_nt8_eod.py check  "C:/NT8 data"
-    python wt_nt8_eod.py export "C:/NT8 data" all_data.csv      (or .parquet)
+    python wt_nt8_eod.py export "C:/NT8 data" all_data.csv      (or .parquet, or .db for SQLite)
+    python wt_nt8_eod.py export "C:/NT8 data" C:/out --format amibroker   (nt8, amibroker, metastock-csv, mt5, csv-per-symbol)
 
 For education and analysis only – not investment advice. Provided "as is" under the MIT
 licence (see LICENSE). This toolkit does not provide market data. Always compare
@@ -41,7 +42,7 @@ from typing import Iterable
 
 import pandas as pd
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 COLUMNS = ["date", "open", "high", "low", "close", "volume"]
 DEFAULT_EXTENSIONS = (".txt", ".csv")
@@ -242,6 +243,92 @@ def write_nt8(df: pd.DataFrame, folder: str | os.PathLike, suffix: str = ".Last"
     return written
 
 
+# ----------------------------------------------------------------------------- more writers
+def _iter_symbols(df):
+    for sym, g in df.dropna(subset=["date"]).sort_values("date").groupby("symbol"):
+        yield sym, g
+
+
+def _f4(x) -> str:
+    return f"{x:.4f}"
+
+
+def _vol(v) -> int:
+    return 0 if pd.isna(v) else int(v)
+
+
+def write_amibroker(df: pd.DataFrame, folder: str | os.PathLike) -> list[Path]:
+    """AmiBroker ASCII import files: SYMBOL.txt with Ticker,Date(yyyymmdd),Open,High,Low,Close,Volume."""
+    folder = Path(folder); folder.mkdir(parents=True, exist_ok=True); out = []
+    for sym, g in _iter_symbols(df):
+        p = folder / f"{sym}.txt"
+        with open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write("Ticker,Date,Open,High,Low,Close,Volume\n")
+            for r in g.itertuples(index=False):
+                f.write(f"{sym},{r.date:%Y%m%d},{_f4(r.open)},{_f4(r.high)},{_f4(r.low)},{_f4(r.close)},{_vol(r.volume)}\n")
+        out.append(p)
+    return out
+
+
+def write_metastock_csv(df: pd.DataFrame, folder: str | os.PathLike) -> list[Path]:
+    """MetaStock ASCII files (<TICKER>,<PER>,<DTYYYYMMDD>,<OPEN>,<HIGH>,<LOW>,<CLOSE>,<VOL>), one per symbol –
+    import them with MetaStock's downloader."""
+    folder = Path(folder); folder.mkdir(parents=True, exist_ok=True); out = []
+    for sym, g in _iter_symbols(df):
+        p = folder / f"{sym}.csv"
+        with open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write("<TICKER>,<PER>,<DTYYYYMMDD>,<OPEN>,<HIGH>,<LOW>,<CLOSE>,<VOL>\n")
+            for r in g.itertuples(index=False):
+                f.write(f"{sym},D,{r.date:%Y%m%d},{_f4(r.open)},{_f4(r.high)},{_f4(r.low)},{_f4(r.close)},{_vol(r.volume)}\n")
+        out.append(p)
+    return out
+
+
+def write_mt5(df: pd.DataFrame, folder: str | os.PathLike) -> list[Path]:
+    """MetaTrader 5 bar files for custom symbols (Symbols → Bars → Import Bars): tab-separated
+    <DATE> <TIME> <OPEN> <HIGH> <LOW> <CLOSE> <TICKVOL> <VOL> <SPREAD>, dates as yyyy.MM.dd, one file per symbol."""
+    folder = Path(folder); folder.mkdir(parents=True, exist_ok=True); out = []
+    for sym, g in _iter_symbols(df):
+        p = folder / f"{sym}.csv"
+        with open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write("<DATE>\t<TIME>\t<OPEN>\t<HIGH>\t<LOW>\t<CLOSE>\t<TICKVOL>\t<VOL>\t<SPREAD>\n")
+            for r in g.itertuples(index=False):
+                v = _vol(r.volume)
+                f.write(f"{r.date:%Y.%m.%d}\t00:00:00\t{_f4(r.open)}\t{_f4(r.high)}\t{_f4(r.low)}\t{_f4(r.close)}\t{v}\t{v}\t0\n")
+        out.append(p)
+    return out
+
+
+def write_csv_per_symbol(df: pd.DataFrame, folder: str | os.PathLike) -> list[Path]:
+    """Plain CSV per symbol (Date,Open,High,Low,Close,Volume) – the layout most backtesting tools,
+    spreadsheets and charting apps read directly."""
+    folder = Path(folder); folder.mkdir(parents=True, exist_ok=True); out = []
+    for sym, g in _iter_symbols(df):
+        p = folder / f"{sym}.csv"
+        g[["date", "open", "high", "low", "close", "volume"]].rename(columns=str.capitalize).to_csv(
+            p, index=False, date_format="%Y-%m-%d", float_format="%.4f")
+        out.append(p)
+    return out
+
+
+def to_sqlite(df: pd.DataFrame, path: str | os.PathLike, table: str = "bars") -> Path:
+    """Save to a SQLite database file (one table, indexed on symbol+date) – query it with SQL from
+    Python, Excel (ODBC), DB Browser for SQLite or any reporting tool. Replaces the table if it exists."""
+    import sqlite3
+    path = Path(path)
+    d = df.dropna(subset=["date"]).copy()
+    d["date"] = d["date"].dt.strftime("%Y-%m-%d")
+    cols = [c for c in ["symbol", "date", "open", "high", "low", "close", "volume"] if c in d.columns]
+    with sqlite3.connect(path) as con:
+        d[cols].to_sql(table, con, if_exists="replace", index=False)
+        con.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_symbol_date ON {table}(symbol, date)")
+    return path
+
+
+WRITERS = {"nt8": lambda df, folder: write_nt8(df, folder), "amibroker": write_amibroker, "metastock-csv": write_metastock_csv,
+           "mt5": write_mt5, "csv-per-symbol": write_csv_per_symbol}
+
+
 def _n(x) -> str:
     return f"{x:.6f}".rstrip("0").rstrip(".")
 
@@ -260,7 +347,8 @@ def main(argv=None) -> int:
         s = sub.add_parser(name, help=hlp)
         s.add_argument("folder", help="converter output root (its NT-All folder is used) or any folder of NT8 files")
         if name == "export":
-            s.add_argument("output", help="all_data.csv or all_data.parquet")
+            s.add_argument("output", help="all_data.csv / .parquet / .db (SQLite), or a folder when --format is given")
+            s.add_argument("--format", choices=sorted(WRITERS), help="write one file per symbol for this platform")
         if name == "check":
             s.add_argument("--max-gap-days", type=int, default=10)
             s.add_argument("--jump-pct", type=float, default=40.0)
@@ -285,8 +373,14 @@ def main(argv=None) -> int:
         if a.save:
             rep.to_csv(a.save, index=False)
     elif a.cmd == "export":
-        p = export(df, a.output)
-        print(f"Saved {len(df)} rows for {df['symbol'].nunique()} symbols to {p}")
+        if a.format:
+            files = WRITERS[a.format](df, a.output)
+            print(f"Wrote {len(files)} {a.format} files to {a.output}")
+        elif str(a.output).lower().endswith((".db", ".sqlite")):
+            print(f"Saved {len(df)} rows for {df['symbol'].nunique()} symbols to {to_sqlite(df, a.output)}")
+        else:
+            p = export(df, a.output)
+            print(f"Saved {len(df)} rows for {df['symbol'].nunique()} symbols to {p}")
     return 0
 
 

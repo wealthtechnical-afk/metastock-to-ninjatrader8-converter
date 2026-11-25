@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wt-nt8-eod"
+version = "1.1.0"
+description = "Read, check and export NinjaTrader 8 end-of-day files (incl. the free WealthMetaStockToNT8 Converter's output) in Python - CSV, Parquet, SQLite, NT8, AmiBroker, MetaStock, MetaTrader 5."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "WealthTechnical LLP" }]
+requires-python = ">=3.8"
+dependencies = ["pandas>=1.5"]
+keywords = ["ninjatrader", "metastock", "amibroker", "metatrader", "eod", "stock data", "pandas", "data quality"]
+classifiers = ["License :: OSI Approved :: MIT License", "Programming Language :: Python :: 3", "Topic :: Office/Business :: Financial :: Investment", "Intended Audience :: Developers", "Intended Audience :: Financial and Insurance Industry"]
+
+[project.optional-dependencies]
+parquet = ["pyarrow"]
+
+[project.urls]
+Homepage = "https://www.wealthtechnical.com/free-data-kits/"
+Source = "https://github.com/wealthtechnical-afk/metastock-to-ninjatrader8-converter/tree/main/developer-toolkit"
+
+[project.scripts]
+wt-nt8-eod = "wt_nt8_eod:main"
+
+[tool.setuptools]
+package-dir = { "" = "python" }
+py-modules = ["wt_nt8_eod"]

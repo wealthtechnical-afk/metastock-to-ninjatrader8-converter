@@ -24,6 +24,8 @@ Works with MetaStock-compatible data from any data vendor or market – and from
 
 The converter writes plain-text files (`NT-All/SYMBOL.Last.txt`, `yyyyMMdd;open;high;low;close;volume`) plus symbol import lists and a symbol-mapping file. The free **[developer-toolkit](developer-toolkit/)** helps you build on them:
 
+**Install:** `pip install wt-nt8-eod` ([PyPI](https://pypi.org/project/wt-nt8-eod/))
+
 - **Python library + command line** – read the whole output into pandas in one line, read the symbol lists and mapping, export to CSV/Parquet, write NT8 files back
 - **Data-quality checks** – duplicate dates, high < low, bad prices, long gaps, unadjusted splits/bonuses
 - **Examples** – Jupyter notebook, 52-week-high screener, export, quality report, weekly bars back to NT8
